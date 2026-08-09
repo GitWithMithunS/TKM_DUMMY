@@ -1,7 +1,7 @@
 import './App.css'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Home from '../src/pages/Home'
-import Vehicle from '../src/pages/Vehicle'
+import JsdCustomerMaster from '../src/pages/JsdCustomerMaster'
 
 
 function App() {
@@ -11,7 +11,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path='/' element={<Home/>} />
-          <Route path="/vehicle" element={<Vehicle />} />
+          <Route path="/jsdCustomerMaster" element={<JsdCustomerMaster />} />
         </Routes>
       </BrowserRouter>
     </>
