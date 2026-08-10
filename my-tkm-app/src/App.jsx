@@ -5,6 +5,8 @@ import Master from '../src/pages/Master'
 import Service_TKM from '../src/pages/Service_TKM'
 import JsdCustomerMaster from '../src/pages/JsdCustomerMaster'
 import MainLayout from "./layout/MainLayout";
+import ColorMaster from "./pages/ColorMaster";
+
 
 
 function App() {
@@ -18,6 +20,8 @@ function App() {
             <Route path="/jdp" element={<JsdCustomerMaster />} />
             <Route path='/master' element={<Master/>} />
             <Route path='/service_TKM' element={<Service_TKM/>} />
+            <Route path="/colorMaster" element={<ColorMaster />} />
+
           </Route>
         </Routes>
       </BrowserRouter>
@@ -27,7 +31,7 @@ function App() {
 
 
 
-export default App
+export default App;
 
 
 
