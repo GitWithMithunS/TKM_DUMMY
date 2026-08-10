@@ -1,11 +1,11 @@
 import React from "react";
 
-const Home = () => {
+const Service_TKM = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
       
       <p className="text-gray-600 text-lg mb-4">
-        Home Page - TKM
+        Service_TKM Page - TKM
       </p>
 
       <div className="bg-white p-8 rounded-xl shadow-lg">
@@ -18,4 +18,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default Service_TKM;
