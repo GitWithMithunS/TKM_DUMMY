@@ -1,6 +1,6 @@
 import './App.css'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import Home from '../src/pages/Home'
+// import Home from '../src/pages/Home'
 import JsdCustomerMaster from '../src/pages/JsdCustomerMaster'
 import ColorMaster from "./pages/ColorMaster";
 
@@ -13,7 +13,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path='/' element={<Home/>} />
-          <Route path="/jsdCustomerMaster" element={<JsdCustomerMaster />} />
+          <Route path="/jsd" element={<JsdCustomerMaster />} />
           <Route path="/colorMaster" element={<ColorMaster />} />
             </Routes>
       </BrowserRouter>
