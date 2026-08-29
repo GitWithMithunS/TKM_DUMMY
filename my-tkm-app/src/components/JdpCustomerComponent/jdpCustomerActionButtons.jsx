@@ -1,6 +1,6 @@
 import React from "react";
-
-const jdpCustomerActionButtons = ({ handleAdd, handleDelete, handleSave }) => {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+const jdpCustomerActionButtons = ({ handleAdd,handleDisable , handleDelete, handleSave }) => {
   return (
     <div>
       <div className="flex justify-center gap-4 mt-6 flex-wrap">
@@ -12,11 +12,19 @@ const jdpCustomerActionButtons = ({ handleAdd, handleDelete, handleSave }) => {
         </button>
 
         <button
+          onClick={handleDisable}
+          className="bg-orange-500 text-white px-5 py-2 rounded-lg hover:bg-orange-300"
+        >
+          Disable
+        </button>
+
+        <button
           onClick={handleDelete}
           className="bg-red-500 text-white px-5 py-2 rounded-lg hover:bg-red-300"
         >
           Delete
         </button>
+
 
         <button
           onClick={handleSave}

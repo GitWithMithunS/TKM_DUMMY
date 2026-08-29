@@ -1,28 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import JdpCustomerTable from "../components/JdpCustomerComponent/JdpCustomerTable";
 import JdpCustomerForm from "../components/JdpCustomerComponent/JdpCustomerForm";
 import JdpCustomerActionButtons from "../components/JdpCustomerComponent/jdpCustomerActionButtons";
-
-const initialData = [
-  {
-    id: 1,
-    selected: false,
-    saleDateFrom: "01/05/2010",
-    saleDateTo: "31/08/2011",
-  },
-  {
-    id: 2,
-    selected: false,
-    saleDateFrom: "01/05/2011",
-    saleDateTo: "31/08/2012",
-  },
-];
+import {
+  getAllCustomers,
+  addCustomersBulk,
+  deleteCustomersBulk,
+  updateCustomersBulk,
+} from "../services/jdpCustomerMaster.js";
+import { toast } from "react-toastify";
 
 const JdpCustomerMaster = () => {
-  const [rows, setRows] = useState(() => {
-    const savedData = localStorage.getItem("vehicleData");
-    return savedData ? JSON.parse(savedData) : initialData;
-  });
+  const [rows, setRows] = useState([]);
 
   const [showForm, setShowForm] = useState(false);
 
@@ -30,6 +19,35 @@ const JdpCustomerMaster = () => {
     saleDateFrom: "",
     saleDateTo: "",
   });
+
+  const [deletedIds, setDeletedIds] = useState([]);
+
+  //getting all customers data when the page is opened/refreshed
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const fetchCustomers = async () => {
+    try {
+      const response = await getAllCustomers();
+
+      const data = response.data.map((customer) => ({
+        ...customer,
+        selected: false,
+        isNew: false,
+        isModified: false,
+        errors: {},
+        isdisabled: customer.isDisabled ?? false,
+      }));
+
+      console.log("customer fetched successfully : ", data);
+
+      setRows(data);
+    } catch (err) {
+      console.log(err);
+      toast.error("Failed to load jdp customers");
+    }
+  };
 
   const handleCheckboxChange = (id) => {
     setRows((prev) =>
@@ -40,9 +58,19 @@ const JdpCustomerMaster = () => {
   };
 
   const handleInputChange = (id, key, value) => {
-    setRows((prev) =>
-      prev.map((row) => (row.id === id ? { ...row, [key]: value } : row)),
-    );
+    setRows((prev) => {
+      const updatedRows = prev.map((row) =>
+        row.id === id
+          ? {
+              ...row,
+              [key]: value,
+              isModified: true,
+            }
+          : row,
+      );
+
+      return validateTable(updatedRows);
+    });
   };
 
   const handleFormChange = (e) => {
@@ -64,18 +92,24 @@ const JdpCustomerMaster = () => {
     //edge cases
     if (formData.saleDateFrom == "" || formData.saleDateTo == "") {
       console.log("empty formdata");
-      alert("Some fields are not filled");
+      toast.warning("Some fields are not filled");
       return;
     }
 
     //adding new row info
     const newRow = {
-      id: Date.now(),
+      id: `temp-${Date.now()}`,
       selected: false,
       saleDateFrom: formData.saleDateFrom,
       saleDateTo: formData.saleDateTo,
+      isNew: true,
+      isModified: false,
+      errors: {},
     };
 
+    toast("New row added to then Table");
+
+    // newRow.errors = validateRow(newRow);
     setRows((prev) => [...prev, newRow]);
 
     //reset formdata value
@@ -83,6 +117,7 @@ const JdpCustomerMaster = () => {
       saleDateFrom: "",
       saleDateTo: "",
     });
+
     //close the form
     setShowForm(false);
   };
@@ -91,15 +126,150 @@ const JdpCustomerMaster = () => {
     setShowForm(true);
   };
 
-  const handleDelete = () => {
-    setRows((prev) => prev.filter((row) => !row.selected));
-    alert("Delected successfully");
+  const handleDisable = () => {
+    setRows((prev) => 
+      prev.map((row) =>  
+        row.selected ? {
+          ...row ,
+          isModified : true,
+          isDisabled : true,
+          selected : false
+        } 
+        : row
+      )
+    )
+
+    toast.info(
+      "Rows marked as disabled. Click Save to persist."
+    )
   };
 
-  const handleSave = () => {
-    localStorage.setItem("vehicleData", JSON.stringify(rows));
+  const handleDelete = () => {
+    // setRows((prev) => prev.filter((row) => !row.selected));
+    const idsToDelete = rows
+      .filter((row) => row.selected && !row.isNew)
+      .map((row) => {
+        return row.id;
+      });
 
-    alert("Data Saved Successfully");
+    //keeping track of all the rows to be deleted later on save/persist
+    // setDeletedIds((prev) => [...prev, ...idsToDelete]);
+    //to prevent duplicateing same number. storeing in new set
+    setDeletedIds((prev) => [...new Set([...prev, ...idsToDelete])]);
+
+    //displying rows which were not selected
+    setRows((prev) => prev.filter((row) => !row.selected));
+
+    toast.info("Rows marked for deletion. Click Save to persist changes.");
+  };
+
+  const handleSave = async () => {
+    try {
+      //handling invlaid iputs and updates first
+      const invalidRows = rows.filter(
+        (row) => Object.keys(row.errors).length > 0,
+      );
+
+      if (invalidRows.length > 0) {
+        toast.warning("Please fix highlighted rows before saving");
+        return;
+      }
+
+      //add new rows to db
+      const newRows = rows.filter((row) => row.isNew);
+      console.log("new customer to be added :", newRows);
+
+      //update old rows already present in db
+      const exisitingRows = rows.filter((row) => !row.isNew && row.isModified);
+
+      if (newRows.length > 0) {
+        const payload = newRows.map(
+          ({ id, selected, isNew, isModified, ...customer }) => customer,
+        );
+
+        // const delayPromise = new Promise((resolve) => setTimeout(resolve , 3000));
+        // const res = await addCustomersBulk(payload);
+        const res = await toast.promise(addCustomersBulk(payload), {
+          pending: "Adding customers...",
+          success: "Customers added successfully",
+          error: "Failed to add customers",
+        });
+        console.log("Successfully added new customers:", res.data);
+      }
+
+      if (exisitingRows.length > 0) {
+        const payload = exisitingRows.map(
+          ({ selected, isNew, isModified, ...customer }) => customer,
+        );
+
+        // const res = await updateCustomersBulk(payload);
+        const res = await toast.promise(updateCustomersBulk(payload), {
+          pending: "Updating customers...",
+          success: "Customers updated successfully",
+          error: "Failed to update customers",
+        });
+        console.log("Successfully updated old customers:", res);
+      }
+
+      //delete the rows in the actual DB for persistance
+      if (deletedIds.length > 0) {
+        console.log("Ids to be deleted :", deletedIds);
+        await deleteCustomersBulk(deletedIds);
+        setDeletedIds([]);
+      }
+
+      await fetchCustomers();
+
+      toast.success("All changes saved Successfully");
+    } catch (err) {
+      console.error(err);
+
+      toast.error("Failed to save changes");
+    }
+  };
+
+  const validateTable = (rows) => {
+    return rows.map((row, index) => {
+      const errors = {};
+
+      if (!row.saleDateFrom) {
+        errors.saleDateFrom = "Required";
+      }
+
+      if (!row.saleDateTo) {
+        errors.saleDateTo = "Required";
+      }
+
+      if (
+        row.saleDateFrom &&
+        row.saleDateTo &&
+        new Date(row.saleDateTo) < new Date(row.saleDateFrom)
+      ) {
+        errors.saleDateFrom = "Must be before Sale Date To";
+        errors.saleDateTo = "Must be after Sale Date From";
+      }
+
+      if (index > 0) {
+        const previousRow = rows[index - 1];
+
+        if (
+          row.saleDateFrom &&
+          previousRow.saleDateTo &&
+          new Date(row.saleDateFrom) <= new Date(previousRow.saleDateTo)
+        ) {
+          errors.saleDateFrom = "Must be after previous row's Sale Date To";
+        }
+      }
+
+      if (Object.keys(errors).length > 0) {
+        console.log(...rows, errors);
+      }
+
+      return {
+        ...row,
+        errors: errors,
+      };
+    });
   };
 
   return (
@@ -119,6 +289,7 @@ const JdpCustomerMaster = () => {
         {/* Jdp Action buttons */}
         <JdpCustomerActionButtons
           handleAdd={handleAdd}
+          handleDisable={handleDisable}
           handleDelete={handleDelete}
           handleSave={handleSave}
         />
