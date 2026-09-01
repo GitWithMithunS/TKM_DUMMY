@@ -6,8 +6,15 @@ export const getCustomerById = (id) =>{
     return axios.get(`${API_URL}/${id}`);
 }
 
-export const getAllCustomers = () =>{
-    return axios.get(API_URL);
+export const getAllCustomers = (page , size) =>{
+    // const params = {
+    //     page : page,
+    //     size : size,
+    // }
+    const params = {};
+    params.page = page;
+    params.size = size;
+    return axios.get(API_URL , {params});
 }
 
 export const addCustomer = (customer) => {
@@ -33,4 +40,17 @@ export const updateCustomer = (id , customer) => {
 
 export const updateCustomersBulk = (customers) => {
     return axios.put(`${API_URL}/bulk` , customers);
+}
+
+export const searchjdpCustomers = (isDisabled , saleDateFrom , saleDateTo , page , size) => {
+    const params = {};
+
+    if(isDisabled  != "") params.isDisabled = isDisabled;
+    if(saleDateFrom != "") params.saleDateFrom = saleDateFrom;
+    if(saleDateTo != "") params.saleDateTo = saleDateTo;
+
+    params.page = page;
+    params.size = size;
+
+    return axios.get(`${API_URL}/search` , {params});
 }

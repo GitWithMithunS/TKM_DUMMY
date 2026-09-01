@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from "react";
 import JdpCustomerTable from "../components/JdpCustomerComponent/JdpCustomerTable";
 import JdpCustomerForm from "../components/JdpCustomerComponent/JdpCustomerForm";
+import JdpCustomerSearch from "../components/JdpCustomerComponent/JdpCustomerSearch";
+import JdpPaginationComponent from "../components/JdpCustomerComponent/JdpPaginationComponent";
 import JdpCustomerActionButtons from "../components/JdpCustomerComponent/jdpCustomerActionButtons";
 import {
   getAllCustomers,
   addCustomersBulk,
   deleteCustomersBulk,
   updateCustomersBulk,
+  searchjdpCustomers,
 } from "../services/jdpCustomerMaster.js";
 import { toast } from "react-toastify";
 
@@ -22,27 +25,50 @@ const JdpCustomerMaster = () => {
 
   const [deletedIds, setDeletedIds] = useState([]);
 
+  const [searchFilters, setSearchFilters] = useState({
+    saleDateFrom: "",
+    saleDateTo: "",
+    isDisabled: "",
+  });
+
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(8);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+
   //getting all customers data when the page is opened/refreshed
   useEffect(() => {
-    fetchCustomers();
-  }, []);
+    const hasFilters =
+      searchFilters.saleDateFrom !== "" ||
+      searchFilters.saleDateTo !== "" ||
+      searchFilters.isDisabled !== "";
+
+    if (hasFilters) {
+      handleSearch();
+    } else {
+      fetchCustomers();
+    }
+  }, [page]);
 
   const fetchCustomers = async () => {
     try {
-      const response = await getAllCustomers();
+      const response = await getAllCustomers(page , size);
 
-      const data = response.data.map((customer) => ({
+      const data = response.data.content.map((customer) => ({
         ...customer,
         selected: false,
         isNew: false,
         isModified: false,
         errors: {},
-        isdisabled: customer.isDisabled ?? false,
+        isDisabled: customer.isDisabled ?? false,
       }));
 
       console.log("customer fetched successfully : ", data);
 
       setRows(data);
+      setTotalPages(response.data.totalPages);
+      setTotalElements(response.data.totalElements);
+      // toast.success("Search Completed");
     } catch (err) {
       console.log(err);
       toast.error("Failed to load jdp customers");
@@ -127,21 +153,20 @@ const JdpCustomerMaster = () => {
   };
 
   const handleDisable = () => {
-    setRows((prev) => 
-      prev.map((row) =>  
-        row.selected ? {
-          ...row ,
-          isModified : true,
-          isDisabled : true,
-          selected : false
-        } 
-        : row
-      )
-    )
+    setRows((prev) =>
+      prev.map((row) =>
+        row.selected
+          ? {
+              ...row,
+              isModified: true,
+              isDisabled: true,
+              selected: false,
+            }
+          : row,
+      ),
+    );
 
-    toast.info(
-      "Rows marked as disabled. Click Save to persist."
-    )
+    toast.info("Rows marked as disabled. Click Save to persist.");
   };
 
   const handleDelete = () => {
@@ -272,6 +297,52 @@ const JdpCustomerMaster = () => {
     });
   };
 
+  const handleResetSearch = async () => {
+    setSearchFilters({
+      saleDateFrom: "",
+      saleDateTo: "",
+      isDisabled: "",
+    });
+
+    await fetchCustomers;
+
+    toast.success("Search filter is Reset");
+  };
+
+  const handleSearch = async () => {
+    try {
+      if(searchFilters.saleDateFrom > searchFilters.saleDateTo){
+        toast.error("Sale date from must be less than or eaul to sale Date to ");
+        return;
+      }
+
+      const response = await searchjdpCustomers(
+        searchFilters.isDisabled,
+        searchFilters.saleDateFrom,
+        searchFilters.saleDateTo,
+        page,
+        size,
+      );
+      console.log(response);
+      
+      const data = response.data.content.map((customers) => ({
+        ...customers,
+        selected: false,
+        isNew: false,
+        isModified: false,
+        errors: {},
+      }));
+        console.log("data => " , data);
+      
+      setRows(data);
+      setTotalPages(response.data.totalPages);
+      setTotalElements(response.data.totalElements);
+    } catch (err) {
+      console.log(err);
+      toast.error("Failed to search Customers");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 flex justify-center items-start p-4 md:p-8">
       <div className="w-full max-w-5xl bg-white rounded-xl shadow-lg p-4 md:p-6">
@@ -279,11 +350,27 @@ const JdpCustomerMaster = () => {
           JDP Customer Master
         </h1>
 
+        <JdpCustomerSearch
+          searchFilters={searchFilters}
+          setSearchFilters={setSearchFilters}
+          handleSearch={handleSearch}
+          handleResetSearch={handleResetSearch}
+        />
+
         {/* Jdp Table */}
         <JdpCustomerTable
+          page = {page}
+          size = {size}
           rows={rows}
           handleCheckboxChange={handleCheckboxChange}
           handleInputChange={handleInputChange}
+        />
+
+        <JdpPaginationComponent
+          page = {page}
+          setPage = {setPage}
+          totalPages = {totalPages}
+          totalElements = {totalElements}
         />
 
         {/* Jdp Action buttons */}
@@ -293,6 +380,7 @@ const JdpCustomerMaster = () => {
           handleDelete={handleDelete}
           handleSave={handleSave}
         />
+
       </div>
 
       {/* Add Form */}
