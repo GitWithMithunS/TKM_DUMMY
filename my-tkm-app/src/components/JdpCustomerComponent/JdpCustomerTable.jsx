@@ -1,15 +1,17 @@
 import React from "react";
 
 const JdpCustomerTable = ({
+  page,
+  size,
   rows,
   handleCheckboxChange,
   handleInputChange,
 }) => {
   return (
     <>
-      <div className="overflow-x-auto flex justify-center">
+      <div className="overflow-x-auto overflow-y-auto max-h-115 flex justify-center">
         <table className="w-full max-w-4xl border border-gray-300">
-          <thead>
+          <thead className="sticky top-0 ">
             <tr className="bg-gray-600 text-white">
               <th className="border px-4 py-2">Select</th>
               <th className="border px-4 py-2">S.No</th>
@@ -25,10 +27,10 @@ const JdpCustomerTable = ({
                 key={row.id}
                 className={
                   row.isDisabled
-                  ? "bg-gray-200 text-gray-500" 
-                  : Object.keys(row.errors || {}).length > 0
-                    ? "bg-red-100"
-                    : "hover:bg-gray-300"
+                    ? "bg-gray-200 text-gray-500"
+                    : Object.keys(row.errors || {}).length > 0
+                      ? "bg-red-100"
+                      : "hover:bg-gray-300"
                 }
               >
                 <td className="border text-center px-4 py-2">
@@ -39,12 +41,15 @@ const JdpCustomerTable = ({
                   />
                 </td>
 
-                <td className="border text-center px-4 py-2">{index + 1}</td>
-
+                {/* <td className="border text-center px-4 py-2">{index + 1}</td> */}
+                <td className="border text-center px-4 py-2">
+                  {page * size + index + 1}
+                </td>
+                
                 <td className="border px-4 py-2">
                   <input
                     type="date"
-                    disabled = {row.isDisabled}
+                    disabled={row.isDisabled}
                     value={row.saleDateFrom}
                     min={index > 0 ? rows[index - 1].saleDateTo : "2000-01-01"}
                     max="2099-12-31"
@@ -67,7 +72,7 @@ const JdpCustomerTable = ({
                 <td className="border px-4 py-2">
                   <input
                     type="date"
-                    disabled = {row.isDisabled}
+                    disabled={row.isDisabled}
                     min={row.saleDateFrom}
                     max="2099-12-31"
                     value={row.saleDateTo}
@@ -87,16 +92,11 @@ const JdpCustomerTable = ({
                   )}
                 </td>
 
-                <td className = "border px-4 py-2">
+                <td className="border px-4 py-2">
                   {row.isDisabled ? (
-                    <span className = "text-red-600 font-bold">
-                      Disabled
-                    </span>
-
+                    <span className="text-red-600 font-bold">Disabled</span>
                   ) : (
-                    <span className = "text-green-600 font-bold">
-                      Active
-                    </span>
+                    <span className="text-green-600 font-bold">Active</span>
                   )}
                 </td>
               </tr>
